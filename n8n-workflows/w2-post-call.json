@@ -1,0 +1,249 @@
+{
+  "name": "W2 — post-call",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-call",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "2f856ebd-4da0-4040-9685-d76a43902b50",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "riverside-post-call"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Redact PPSNs, then extract call summary fields.\n// NOTE: field paths in the ElevenLabs payload can differ by version -\n// after your first real call, open this execution, inspect the Webhook\n// node output, and adjust the paths below if any field comes out empty.\nconst raw = $input.first().json;\nconst p = raw.body || raw;\nconst d = p.data || p;\nconst redact = t => String(t || '')\n  .replace(/\\b\\d{7}\\s?[A-Za-z]{1,2}\\b/g, '[PPSN]')\n  .replace(/\\b(\\d[\\s,.-]?){7}[A-Za-z]{1,2}\\b/g, '[PPSN]');\nconst transcriptArr = Array.isArray(d.transcript) ? d.transcript : [];\nreturn [{json:{\n  timestamp: new Date().toISOString(),\n  direction: d.metadata?.call_direction || d.conversation_initiation_client_data ? 'outbound' : 'inbound',\n  caller_number: d.metadata?.phone_number || d.metadata?.caller_number || 'unknown',\n  duration_secs: d.metadata?.call_duration_secs || 0,\n  outcome: d.analysis?.call_successful || '',\n  summary: redact(d.analysis?.transcript_summary || ''),\n  transcript: redact(transcriptArr.map(t => (t.role || '?') + ': ' + (t.message || '')).join('\\n'))\n}}];"
+      },
+      "id": "40b17053-e891-432a-8ed3-881247bfc1f2",
+      "name": "Redact + Extract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Riverside Dental — Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 234174705,
+          "mode": "list",
+          "cachedResultName": "Call Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=234174705"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $json.timestamp }}",
+            "Direction": "={{ $json.direction }}",
+            "Caller": "={{ $json.caller_number }}",
+            "Duration_secs": "={{ $json.duration_secs }}",
+            "Outcome ": "={{ $json.outcome }}",
+            "Summary": "={{ $json.summary }}",
+            "Transcript": "={{ $json.transcript }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Direction",
+              "displayName": "Direction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Caller",
+              "displayName": "Caller",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration_secs",
+              "displayName": "Duration_secs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Outcome ",
+              "displayName": "Outcome ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Transcript",
+              "displayName": "Transcript",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "59d7da64-1750-4519-9f6f-ffdab2cb41f6",
+      "name": "Append Call Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "staff@example.com",
+        "subject": "=Call handled — {{ $('Redact + Extract').item.json.outcome || 'completed' }} ({{ $('Redact + Extract').item.json.duration_secs }}s)",
+        "emailType": "text",
+        "message": "=Summary:\n{{ $('Redact + Extract').item.json.summary }}\n\nCaller: {{ $('Redact + Extract').item.json.caller_number }}\nDirection: {{ $('Redact + Extract').item.json.direction }}\n\nTranscript:\n{{ $('Redact + Extract').item.json.transcript }}",
+        "options": {}
+      },
+      "id": "ed822f7e-77d9-4680-b403-9b76c874127e",
+      "name": "Email Summary",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        0
+      ],
+      "webhookId": "REDACTED",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const crypto = require('crypto');\nconst secret = 'YOUR_ELEVENLABS_WEBHOOK_SECRET';\n\nconst sigHeader = $input.item.json.headers['elevenlabs-signature'];\nif (!sigHeader) throw new Error('Missing signature header');\n\nconst [tPart, vPart] = sigHeader.split(',');\nconst timestamp = tPart.split('=')[1];\nconst signature = vPart.split('=')[1];\n\nif (Math.abs(Date.now()/1000 - Number(timestamp)) > 300) {\n  throw new Error('Webhook timestamp too old');\n}\n\nconst rawBody = Buffer.from($input.item.binary.data.data, 'base64').toString('utf8');\nconst expected = crypto.createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex');\n\nif (expected !== signature) throw new Error('Invalid webhook signature');\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        0
+      ],
+      "id": "3bd0120c-2538-4062-9ed8-612cf66a63e5",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redact + Extract": {
+      "main": [
+        [
+          {
+            "node": "Append Call Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Call Log": {
+      "main": [
+        [
+          {
+            "node": "Email Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Redact + Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "b4f9574f-7054-4e7e-93b8-5b3bd991aba1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REDACTED"
+  },
+  "nodeGroups": [],
+  "id": "sjYD0NoRqUYXFJdx",
+  "tags": []
+}

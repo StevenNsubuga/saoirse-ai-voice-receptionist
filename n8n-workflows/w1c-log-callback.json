@@ -1,0 +1,294 @@
+{
+  "name": "W1c — log-callback",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "log-callback",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "22f103f7-f9ec-4865-97eb-ca2b9a54792c",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        128
+      ],
+      "webhookId": "riverside-log-callback",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Riverside Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $('Webhook').first().json.body || {};\nconst allowed = ['callback','cancellation','complaint','prescription','do-not-call'];\nconst category = allowed.includes(String(b.category)) ? b.category : 'callback';\nreturn [{json:{\n  timestamp: new Date().toISOString(),\n  name: b.caller_name || 'unknown',\n  phone: b.phone || '',\n  reason: b.reason || '',\n  category,\n  urgency: b.urgency === 'urgent' ? 'urgent' : 'normal',\n  status: 'open'\n}}];"
+      },
+      "id": "27661c57-3d87-419f-96b0-fecaf3151e33",
+      "name": "Shape Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Riverside Dental — Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1334171361,
+          "mode": "list",
+          "cachedResultName": "Callbacks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=1334171361"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $json.timestamp }}",
+            "Name": "={{ $json.name }}",
+            "Phone": "={{ $json.phone }}",
+            "Reason": "={{ $json.reason }}",
+            "Category": "=  {{ $json.category }}",
+            "Urgency": "={{ $json.urgency }}",
+            "Status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason",
+              "displayName": "Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "31c272a2-5d86-49d6-967f-0c440a8c75f5",
+      "name": "Append Callback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"logged\",\n  \"message\": \"Callback logged, staff will ring back\"\n}",
+        "options": {}
+      },
+      "id": "45b776c6-f54c-42a0-8e55-337461c2becc",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Shape Row').item.json.urgency }}",
+              "rightValue": "urgent",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "d3e0a8bc-eeb6-47de-8378-15807096f3aa"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "824b6538-d9f8-46b8-ae34-10d10e3a4e6f",
+      "name": "If Urgent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "staff@example.com",
+        "subject": "=URGENT callback — {{ $('Shape Row').item.json.name }}",
+        "emailType": "text",
+        "message": "=Urgent callback logged by Saoirse.\n\nName: {{ $('Shape Row').item.json.name }}\nPhone: {{ $('Shape Row').item.json.phone }}\nReason: {{ $('Shape Row').item.json.reason }}\nCategory: {{ $('Shape Row').item.json.category }}\nLogged: {{ $('Shape Row').item.json.timestamp }}",
+        "options": {}
+      },
+      "id": "c693ecc5-6acf-4814-9e57-567e64de01cd",
+      "name": "Email Practice",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        0
+      ],
+      "webhookId": "REDACTED",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Shape Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Row": {
+      "main": [
+        [
+          {
+            "node": "Append Callback",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Callback": {
+      "main": [
+        [
+          {
+            "node": "If Urgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Urgent": {
+      "main": [
+        [
+          {
+            "node": "Email Practice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c49e8a70-6cb7-49e3-b2ed-db3451dcc104",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REDACTED"
+  },
+  "nodeGroups": [],
+  "id": "PdLNJXbuMfj6D4pi",
+  "tags": []
+}

@@ -1,0 +1,192 @@
+{
+  "name": "W3 — outbound-reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "id": "43adbfd6-a239-43b2-b3c9-015513e665e6",
+      "name": "Daily 17:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Riverside Dental"
+        },
+        "returnAll": true,
+        "timeMin": "={{ DateTime.now().plus({days:1}).toISODate() }}T00:00:00",
+        "timeMax": "={{ DateTime.now().plus({days:2}).toISODate() }}T00:00:00",
+        "options": {}
+      },
+      "id": "e2d56bd2-fd5c-481e-91aa-76a3b038bd99",
+      "name": "Tomorrow's Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -656,
+        128
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse each event's description (format written by W1b) into call variables.\nconst events = $input.all().map(i => i.json).filter(e => e && e.start && e.start.dateTime);\nconst out = [];\nfor (const e of events) {\n  const desc = e.description || '';\n  const phone = (desc.match(/Phone:\\s*(\\+?[\\d\\s-]{7,})/) || [])[1];\n  if (!phone) continue; // no phone, no reminder\n  const name = ((desc.match(/Patient:\\s*(.+)/) || [])[1] || 'the patient').trim();\n  const treatment = ((desc.match(/Treatment:\\s*(.+)/) || [])[1] || 'appointment').trim();\n  const st = new Date(e.start.dateTime);\n  out.push({json:{\n    to_number: phone.replace(/[\\s-]/g, ''),\n    patient_name: name,\n    appointment_date: st.toLocaleDateString('en-IE', {weekday:'long', day:'numeric', month:'long', timeZone:'Europe/Dublin'}),\n    appointment_time: st.toLocaleTimeString('en-IE', {hour:'numeric', minute:'2-digit', timeZone:'Europe/Dublin'}),\n    treatment,\n    event_id: e.id\n  }});\n}\nreturn out;"
+      },
+      "id": "a55544f6-0723-4b4a-af64-ad9cda8d5977",
+      "name": "Parse Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "dc3e1f46-39f5-4be4-a5c3-7d720b11779e",
+      "name": "One At A Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -224,
+        128
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "53fa5b52-db2c-4b60-96c5-405fb956434c",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "from": "+1XXXXXXXXXX",
+        "to": "=={{ $json.to_number }}",
+        "message": "=Hi {{ $json.patient_name }}, reminder from Riverside Dental — your {{ $json.treatment }} appointment is tomorrow at {{ $json.appointment_time }}. Call us on 01 111 222 333 if you need to reschedule.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        64,
+        272
+      ],
+      "id": "d0eee972-05a6-47b1-900b-6e2d8bddfc38",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Twilio account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 17:00": {
+      "main": [
+        [
+          {
+            "node": "Tomorrow's Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tomorrow's Events": {
+      "main": [
+        [
+          {
+            "node": "Parse Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Events": {
+      "main": [
+        [
+          {
+            "node": "One At A Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One At A Time": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an SMS/MMS/WhatsApp message": {
+      "main": [
+        [
+          {
+            "node": "One At A Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "85ee2d3d-7251-4101-8e81-b11edf805106",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REDACTED"
+  },
+  "nodeGroups": [],
+  "id": "VyYWoxCEJNW8fAVF",
+  "tags": []
+}

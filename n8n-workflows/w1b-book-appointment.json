@@ -1,0 +1,272 @@
+{
+  "name": "W1b — book-appointment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "book-appointment",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "672383c2-3923-4aa7-9268-a8a4303d05b6",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        96
+      ],
+      "webhookId": "riverside-book-appointment",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Riverside Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Riverside Dental"
+        },
+        "start": "={{ $json.body.date }}T{{ $json.body.time }}:00+01:00",
+        "end": "={{ DateTime.fromISO($json.body.date + 'T' + $json.body.time + ':00+01:00').plus({minutes:30}).toISO() }}",
+        "additionalFields": {
+          "description": "=Phone: {{ $json.body.phone }}\nPatient: {{ $json.body.patient_name }}\nTreatment: {{ $json.body.treatment }}\nNewPatient: {{ $json.body.is_new_patient }}\nNotes: {{ $json.body.notes || '' }}{{ $json.body.is_reschedule ? '\\nRESCHEDULED - check for old event' : '' }}",
+          "summary": "={{ $json.body.treatment }} — {{ $json.body.patient_name }}"
+        }
+      },
+      "id": "fb896e85-7ef7-49a9-8feb-5cef694d666b",
+      "name": "Create Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        96
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $('Webhook').first().json.body || {};\nconst ref = 'RD-' + Date.now().toString().slice(-4);\nconst weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];\nconst months = ['January','February','March','April','May','June','July','August','September','October','November','December'];\nconst d = new Date(b.date + 'T00:00:00');\nconst [hh, mm] = String(b.time || '00:00').split(':').map(Number);\nconst h12 = ((hh + 11) % 12) + 1;\nconst ampm = hh < 12 ? 'in the morning' : (hh < 17 ? 'in the afternoon' : 'in the evening');\nconst spoken = weekdays[d.getDay()] + ' the ' + d.getDate() + ' of ' + months[d.getMonth()] + ' at ' + h12 + (mm ? ':' + String(mm).padStart(2,'0') : \" o'clock\") + ' ' + ampm;\nreturn [{json:{\n  timestamp: new Date().toISOString(),\n  name: b.patient_name || '',\n  phone: b.phone || '',\n  date: b.date || '',\n  time: b.time || '',\n  treatment: b.treatment || '',\n  new_patient: String(b.is_new_patient),\n  ref,\n  status: 'confirmed',\n  booking_ref: ref,\n  spoken_confirmation: 'Booked for ' + spoken\n}}];"
+      },
+      "id": "89e66df1-159e-4471-abe1-83cc5d5d5e9c",
+      "name": "Build Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Riverside Dental — Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1785787872,
+          "mode": "list",
+          "cachedResultName": "Bookings",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=1785787872"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $json.timestamp }}",
+            "Name": "={{ $json.name }}",
+            "Phone": "={{ $json.phone }}",
+            "Date ": "={{ $json.date }}",
+            "Time": "={{ $json.time }}",
+            "New_patient": "={{ $json.new_patient }}",
+            "Ref": "={{ $json.ref }}",
+            "Treatment": "={{ $json.treatment }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date ",
+              "displayName": "Date ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Treatment",
+              "displayName": "Treatment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "New_patient",
+              "displayName": "New_patient",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Ref",
+              "displayName": "Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "840cd83d-0a14-4e4b-a07a-46553efdf40b",
+      "name": "Append Booking",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c108e838-6e05-4ef3-9959-7898c6ba9e03",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event": {
+      "main": [
+        [
+          {
+            "node": "Build Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Row": {
+      "main": [
+        [
+          {
+            "node": "Append Booking",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "569216a7-a6e5-48de-9534-589e0216c0d7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REDACTED"
+  },
+  "nodeGroups": [],
+  "id": "psV17QP3PLIRioLO",
+  "tags": []
+}

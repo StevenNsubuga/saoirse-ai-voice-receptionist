@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saoirse × n8n — Capability Map</title>
+<style>
+  :root{
+    --ink:#0B1F27; --panel:#11303B; --line:#1D4450;
+    --text:#E9F1F0; --muted:#8FB0B4; --amber:#E8A13D; --signal:#6FE3A5; --copper:#C88450;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ink);color:var(--text);font-family:'Space Grotesk','IBM Plex Mono',system-ui,sans-serif;padding:48px 20px 72px;display:flex;flex-direction:column;align-items:center}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;font-family:monospace}
+  h1{font-size:clamp(24px,4vw,32px);margin-bottom:6px}
+  .sub{color:var(--muted);font-size:14px;max-width:52ch;text-align:center;margin-bottom:36px}
+  svg{max-width:760px;width:100%;height:auto}
+  footer{margin-top:40px;font-family:monospace;font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="eyebrow">Phase 1 · built &amp; tested</div>
+  <h1>Saoirse × n8n</h1>
+  <p class="sub">She talks; n8n acts. Five live capabilities behind secure webhooks — the sixth wakes when telephony lands.</p>
+
+  <svg viewBox="0 0 720 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Saoirse's n8n capability map">
+    <!-- Saoirse -->
+    <rect x="270" y="18" width="180" height="62" rx="10" fill="var(--panel)" stroke="var(--amber)" stroke-width="1.6"/>
+    <text x="360" y="44" text-anchor="middle" font-size="15" font-weight="600" fill="var(--text)">Saoirse</text>
+    <text x="360" y="63" text-anchor="middle" font-size="10.5" fill="var(--muted)">on the call, 24/7</text>
+
+    <line x1="360" y1="80" x2="360" y2="128" stroke="var(--copper)" stroke-width="1.4"/>
+    <polygon points="360,134 355,124 365,124" fill="var(--copper)"/>
+    <text x="372" y="110" font-size="9.5" fill="var(--muted)">secure webhooks</text>
+
+    <!-- n8n hub -->
+    <rect x="245" y="136" width="230" height="60" rx="10" fill="var(--panel)" stroke="var(--copper)" stroke-width="1.4"/>
+    <text x="360" y="161" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text)">n8n — her hands</text>
+    <text x="360" y="179" text-anchor="middle" font-size="10.5" fill="var(--muted)">acts while she talks</text>
+
+    <!-- fan-out -->
+    <g stroke="var(--line)" stroke-width="1.4" fill="none">
+      <path d="M300 196 L110 230 L110 252"/>
+      <path d="M330 196 L235 234 L235 252"/>
+      <path d="M360 196 L360 252"/>
+      <path d="M390 196 L485 234 L485 252"/>
+      <path d="M420 196 L610 230 L610 252"/>
+    </g>
+    <g fill="var(--line)">
+      <polygon points="110,258 105,248 115,248"/>
+      <polygon points="235,258 230,248 240,248"/>
+      <polygon points="360,258 355,248 365,248"/>
+      <polygon points="485,258 480,248 490,248"/>
+      <polygon points="610,258 605,248 615,248"/>
+    </g>
+
+    <!-- capabilities -->
+    <g>
+      <rect x="55" y="260" width="110" height="70" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="110" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Check slots</text>
+      <text x="110" y="300" text-anchor="middle" font-size="9.5" fill="var(--muted)">live calendar</text>
+      <text x="110" y="313" text-anchor="middle" font-size="9.5" fill="var(--muted)">search</text>
+
+      <rect x="180" y="260" width="110" height="70" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="235" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Book visit</text>
+      <text x="235" y="300" text-anchor="middle" font-size="9.5" fill="var(--muted)">calendar event</text>
+      <text x="235" y="313" text-anchor="middle" font-size="9.5" fill="var(--muted)">+ booking row</text>
+
+      <rect x="305" y="260" width="110" height="70" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="360" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Log callback</text>
+      <text x="360" y="300" text-anchor="middle" font-size="9.5" fill="var(--muted)">urgent alerts</text>
+      <text x="360" y="313" text-anchor="middle" font-size="9.5" fill="var(--muted)">emailed to staff</text>
+
+      <rect x="430" y="260" width="110" height="70" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="485" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">PRSI intake</text>
+      <text x="485" y="300" text-anchor="middle" font-size="9.5" fill="var(--muted)">restricted sheet</text>
+      <text x="485" y="313" text-anchor="middle" font-size="9.5" fill="var(--muted)">PPSN redacted</text>
+
+      <rect x="555" y="260" width="110" height="70" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="610" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Call log</text>
+      <text x="610" y="300" text-anchor="middle" font-size="9.5" fill="var(--muted)">transcript +</text>
+      <text x="610" y="313" text-anchor="middle" font-size="9.5" fill="var(--muted)">summary email</text>
+    </g>
+
+    <!-- dormant -->
+    <line x1="360" y1="330" x2="360" y2="360" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <rect x="250" y="360" width="220" height="52" rx="8" fill="none" stroke="var(--signal)" stroke-dasharray="5 4"/>
+    <text x="360" y="382" text-anchor="middle" font-size="12" font-weight="600" fill="var(--signal)">Outbound reminders</text>
+    <text x="360" y="399" text-anchor="middle" font-size="9.5" fill="var(--muted)">daily 17:00 — wakes in Phase 3</text>
+  </svg>
+
+  <footer>saoirse · n8n workflows W1a–W3 · riverside dental demo</footer>
+</body>
+</html>

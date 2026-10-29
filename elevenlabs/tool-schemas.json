@@ -1,0 +1,98 @@
+{
+  "_readme": "Webhook tools for the ElevenLabs agent. Create each under Agent → Tools → Add tool → Webhook. Replace YOUR-N8N with your n8n cloud subdomain. The 'response' blocks document what your n8n workflow must return — the agent reads this JSON to speak the result.",
+
+  "tools": [
+    {
+      "name": "check_availability",
+      "description": "Check open appointment slots. ALWAYS call this before offering any appointment time to the caller. Returns up to 3 available slots.",
+      "type": "webhook",
+      "url": "https://YOUR-N8N.app.n8n.cloud/webhook/check-availability",
+      "method": "POST",
+      "body_parameters": {
+        "preferred_date": {
+          "type": "string",
+          "description": "Caller's preferred date in YYYY-MM-DD. If they said 'next Tuesday', convert to the actual date.",
+          "required": true
+        },
+        "preferred_time_of_day": {
+          "type": "string",
+          "description": "morning | afternoon | any",
+          "required": false
+        },
+        "treatment": {
+          "type": "string",
+          "description": "What the appointment is for, e.g. 'checkup', 'hygienist', 'filling', 'emergency'",
+          "required": true
+        }
+      },
+      "response_example": {
+        "slots": [
+          { "date": "2026-07-21", "time": "09:30", "spoken": "Tuesday the 21st at half nine" },
+          { "date": "2026-07-21", "time": "14:00", "spoken": "Tuesday the 21st at two o'clock" }
+        ],
+        "message": "2 slots found"
+      }
+    },
+    {
+      "name": "book_appointment",
+      "description": "Book a confirmed appointment. Only call AFTER the caller has confirmed their full name, mobile number, and chosen slot aloud.",
+      "type": "webhook",
+      "url": "https://YOUR-N8N.app.n8n.cloud/webhook/book-appointment",
+      "method": "POST",
+      "body_parameters": {
+        "patient_name": { "type": "string", "description": "Full name as confirmed by caller", "required": true },
+        "phone": { "type": "string", "description": "Mobile number as confirmed by caller", "required": true },
+        "date": { "type": "string", "description": "YYYY-MM-DD from a slot returned by check_availability", "required": true },
+        "time": { "type": "string", "description": "HH:MM from a slot returned by check_availability", "required": true },
+        "treatment": { "type": "string", "description": "Reason for appointment", "required": true },
+        "is_new_patient": { "type": "boolean", "description": "True if never attended the practice before", "required": true },
+        "is_reschedule": { "type": "boolean", "description": "True if replacing an existing appointment (outbound reminder flow)", "required": false },
+        "notes": { "type": "string", "description": "Anything else relevant, e.g. 'nervous patient', 'prefers Dr. Byrne'", "required": false }
+      },
+      "response_example": {
+        "status": "confirmed",
+        "booking_ref": "RD-2041",
+        "spoken_confirmation": "Booked for Tuesday the 21st of July at half nine"
+      }
+    },
+    {
+      "name": "log_callback",
+      "description": "Log a request for staff to call the person back. Use for anything you cannot resolve: unanswered questions, prescription queries, complaints, cancellations, out-of-hours urgent matters.",
+      "type": "webhook",
+      "url": "https://YOUR-N8N.app.n8n.cloud/webhook/log-callback",
+      "method": "POST",
+      "body_parameters": {
+        "caller_name": { "type": "string", "description": "Caller's name if given, else 'unknown'", "required": true },
+        "phone": { "type": "string", "description": "Best callback number", "required": true },
+        "reason": { "type": "string", "description": "One-sentence summary of what they need", "required": true },
+        "category": { "type": "string", "description": "Exactly one of: callback | cancellation | complaint | prescription | do-not-call", "required": true },
+        "urgency": { "type": "string", "description": "urgent | normal", "required": true }
+      },
+      "response_example": { "status": "logged", "message": "Callback logged, staff will ring back" }
+    },
+    {
+      "name": "capture_prsi_details",
+      "description": "Securely record a patient's details for a PRSI Treatment Benefit entitlement check. ONLY call when the caller wants to use their PRSI entitlement and has confirmed name, date of birth, and PPS number aloud. Never use for any other purpose.",
+      "type": "webhook",
+      "url": "https://YOUR-N8N.app.n8n.cloud/webhook/capture-prsi-details",
+      "method": "POST",
+      "body_parameters": {
+        "patient_name": { "type": "string", "description": "Full name as confirmed by caller", "required": true },
+        "date_of_birth": { "type": "string", "description": "YYYY-MM-DD", "required": true },
+        "pps_number": { "type": "string", "description": "7 digits followed by 1-2 letters, e.g. 1234567FA. Confirmed digit by digit with the caller.", "required": true },
+        "phone": { "type": "string", "description": "Caller's mobile, for staff follow-up if entitlement check fails", "required": true }
+      },
+      "response_example": { "status": "recorded", "message": "Details recorded, staff will confirm entitlement before the appointment" }
+    }
+  ],
+
+  "native_tools": {
+    "transfer_to_number": {
+      "note": "Configure in ElevenLabs as native call transfer (Twilio). Set the practice line as destination. Add condition text: 'Transfer when caller explicitly asks for a human, is distressed, has a complaint, or has an urgent clinical matter during opening hours Mon-Fri 08:30-17:30.'",
+      "destination": "+3531XXXXXXX"
+    },
+    "end_call": { "note": "Enable native end_call so the agent can hang up gracefully after goodbye." }
+  },
+
+  "security_note": "In each n8n webhook node, require a shared-secret header (e.g. X-Auth-Token) and add the same header in the ElevenLabs tool config, so only your agents can hit these endpoints."
+}
